@@ -5,19 +5,21 @@ import pandas as pd
 
 from modules.GoogleAPI import GoogleAPI
 from modules.Database import Database
+from modules.App import App
 
 SQLPATH = "sqlite:///events.db"
 
 # TODO: add Doc String
 def main():
     load_dotenv(Path(".env"))
-    #GAPI = GoogleAPI(apiKey=os.getenv('GENAI_KEY'))
-    
+    gapi = GoogleAPI(apiKey=os.getenv('GENAI_KEY'))
+    dbase = Database(path=SQLPATH)
+    a = App(gapi, dbase)
 
     print("\nPersonal Assistant CLI App\n")
     while True:
-        print("1. Create An Event")
-        print("2. Organize Calendar")
+        print("1. Add New Events")
+        print("2. Remove An Event")
         print("3. Display Calendar")
         print("4. Quit")
         

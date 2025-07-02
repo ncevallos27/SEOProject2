@@ -10,7 +10,8 @@ class Database():
             if load is None:
                 connection.execute(db.text("CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY, " \
                                                                               "eventName TEXT, " \
-                                                                              "eventTime TEXT, " \
+                                                                              "eventStartTime TEXT, " \
+                                                                              "eventEnd Time TEXT, " \
                                                                               "eventDescription TEXT);"))
             else:
                 load.to_sql('events', con=self.engine, if_exists='replace', index=False)
@@ -19,4 +20,5 @@ class Database():
         df = pd.read_sql("SELECT * FROM events", con=self.engine)
         return df
     
-    
+    def __str__(self):
+        return str(self.returnDatabase())
