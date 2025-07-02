@@ -10,16 +10,16 @@ class GoogleAPI():
         genai.api_key = self.key
         self.client = genai.Client(api_key=self.key)
 
-    def getResponse(self, input=None):
+    def getResponse(self, input=None, context=None):
         response = self.client.models.generate_content(
             model="gemini-2.5-flash",
             config=types.GenerateContentConfig(
-            system_instruction="You are a university instructor and can explain programming concepts clearly in a few words."
+            system_instruction=context
             ),
-            contents="What are the advantages of pair programming?",
+            contents=input,
         )
 
-        print(response.text)
+        # print(response.text)
 
         return response
 
