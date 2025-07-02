@@ -27,6 +27,10 @@ def main():
             userInput = int(input("Enter option: "))
             match userInput:
                 case 1:
+                    # Get Events for Google Calendar (mark moveable or not)
+                    # Get New Events from user (mark movebable or not
+                    # have AI generate new event strucutre
+                    # upload to google calendar and save to database
                     continue
                 case 2:
                     continue
