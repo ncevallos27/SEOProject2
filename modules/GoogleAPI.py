@@ -3,7 +3,7 @@ from google.genai import types
 import os
 
 class GoogleAPI():
-    def __init__(self, apiKey=os.getenv('GENAI_KEY'), model="gemini-2.5-flash"):
+    def __init__(self, apiKey=None, model="gemini-2.5-flash"):
         self.key = apiKey
         self.model = model
 

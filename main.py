@@ -1,12 +1,18 @@
 from pathlib import Path
 from dotenv import load_dotenv
+import os
+import pandas as pd
 
 from modules.GoogleAPI import GoogleAPI
+from modules.Database import Database
+
+SQLPATH = "sqlite:///events.db"
 
 # TODO: add Doc String
 def main():
     load_dotenv(Path(".env"))
-    GAPI = GoogleAPI()
+    #GAPI = GoogleAPI(apiKey=os.getenv('GENAI_KEY'))
+    
 
     print("\nPersonal Assistant CLI App\n")
     while True:
