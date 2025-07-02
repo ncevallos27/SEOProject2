@@ -2,7 +2,6 @@ from google import genai
 from google.genai import types
 import os
 
-
 class GoogleAPI():
     def __init__(self, apiKey=os.getenv('GENAI_KEY'), model="gemini-2.5-flash"):
         self.key = apiKey
@@ -11,7 +10,7 @@ class GoogleAPI():
         genai.api_key = self.key
         self.client = genai.Client(api_key=self.key)
 
-    def getResponse(self):
+    def getResponse(self, input=None):
         response = self.client.models.generate_content(
             model="gemini-2.5-flash",
             config=types.GenerateContentConfig(
