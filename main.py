@@ -262,7 +262,7 @@ def main():
 
             # print(f"result: {result}")
             history.append(types.Content(role='model', parts=[types.Part(function_response=types.FunctionResponse(name=function_call.name, response=result))]))
-            print(history)
+            #print(history)
         else:
             model_text_response = response.candidates[0].content.parts[0].text
             print(model_text_response)
