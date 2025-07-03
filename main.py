@@ -207,7 +207,7 @@ def main():
     history = [
         types.Content(
             role="model",
-            parts=[types.Part(text=f"Here are the upcoming events on the user's calendar:\n{context}")]
+            parts=[types.Part(text=f"Here are the upcoming events on the user's calendar to take into account when creating new events and listing events:\n{context}")]
     )]  # convo history
 
     while True:
