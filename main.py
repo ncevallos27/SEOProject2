@@ -41,7 +41,7 @@ def list_calendar_event(creds, quantity=10):
             .list(
                 calendarId="primary",
                 timeMin=now,
-                maxResults=15,
+                maxResults=quantity,
                 singleEvents=True,
                 orderBy="startTime",
             )
@@ -52,9 +52,13 @@ def list_calendar_event(creds, quantity=10):
         if not events:
             print("No upcoming events found.")
 
+        event_list = []
         for event in events:
             start = event["start"].get("dateTime", event["start"].get("date"))
             print(start, event["summary"])
+            event_list.append({"start" : start, "summary" : event.get("summary", "no title")})
+
+        return event_list
     except HttpError as error:
         print(f"An error occurred: {error}")
 
@@ -190,7 +194,7 @@ def main():
         with open("token.json", "w") as token:
             token.write(creds.to_json())
 
-    list_calendar_event(creds=creds, quantity=10)
+    event_data = list_calendar_event(creds=creds, quantity=10)
 
     # Config client and tools
     client = genai.Client()
