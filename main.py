@@ -2,8 +2,8 @@ import datetime
 import os.path
 from dotenv import load_dotenv
 
-import sqlalchemy as db
 import pandas as pd
+from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -211,8 +211,8 @@ def main():
 
     history = [
         types.Content(
-            role="model",
-            parts=[types.Part(text=f"Here are the upcoming events on the user's calendar:\n{context}")]
+            role="user",
+            parts=[types.Part(text=f"Here are the upcoming events on the user's calendar to take into account when creating new events and listing events:\n{context}")]
     )]  # convo history
 
     while True:
@@ -246,7 +246,7 @@ def main():
 
             # print(f"result: {result}")
             history.append(types.Content(role='model', parts=[types.Part(function_response=types.FunctionResponse(name=function_call.name, response=result))]))
-            print(history)
+            #print(history)
         else:
             model_text_response = response.candidates[0].content.parts[0].text
             print(model_text_response)
@@ -255,6 +255,7 @@ def main():
                     role="model", parts=[types.Part(text=model_text_response)]
                 )
             )
+            #print(history)
 
 
 if __name__ == "__main__":
