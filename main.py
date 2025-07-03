@@ -14,7 +14,21 @@ SQLPATH = "sqlite:///events.db"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 def insert_calendar_event(event_data, creds, calendar_id="primary"):
-    """Inserts a user provided event into their calendar."""
+    """
+    Inserts a user event into the specified Google Calendar.
+
+    Parameters:
+        event_data (dict): A dictionary representing the event to insert.
+        creds (google.oauth2.credentials.Credentials): Authorized credentials to access the Google Calendar API.
+        calendar_id (str): The ID of the calendar to insert the event into. Defaults to 'primary'.
+
+    Returns:
+        None
+
+    Side Effects:
+        Prints the URL of the created event to the console if successful.
+        Prints an error message if the event insertion fails.
+    """
 
     try:
         service = build("calendar", "v3", credentials=creds)
@@ -29,6 +43,21 @@ def insert_calendar_event(event_data, creds, calendar_id="primary"):
 
 
 def list_calendar_event(creds, quantity=10):
+    """
+    Retrieves a list of upcoming events from the user's Google Calendar.
+
+    Parameters:
+        creds (google.oauth2.credentials.Credentials): Authorized credentials to access the Google Calendar API.
+        quantity (int): The number of upcoming events to retrieve. Defaults to 10.
+
+    Returns:
+        list[dict]: A list of events, where each event is a dictionary containing the start time and summary.
+
+    Side Effects:
+        Prints each event's start time and summary to the console.
+        Prints a message if no upcoming events are found or if an API error occurs.
+    """
+    
     try:
         service = build("calendar", "v3", credentials=creds)
 
@@ -57,12 +86,12 @@ def list_calendar_event(creds, quantity=10):
             end = event["end"].get("dateTime", event["end"].get("date"))
             print(start, event["summary"])
             event_list.append({"start" : start, "summary" : event.get("summary", "no title"), "end":end})
-
         return event_list
     except HttpError as error:
         print(f"An error occurred: {error}")
 
 
+# Google Gen Ai Function Declarations
 insert_calendar_event_function = {
     "name": "insert_calendar_event",
     "description": "Inserts a user provided event into their calendar",
@@ -173,10 +202,14 @@ list_calendar_event_function = {
     },  
 }
 
+
 def main():
     """
-    TODO!: Write docstring for main()
+    Handles authentication, initializes the GenAI client, and manages an interactive loop
+    for user prompts. The function supports inserting and listing Google Calendar events
+    via natural language through Gemini AI.
     """
+    
     load_dotenv()  # reads .env by default (no need for Path module)
     creds = None
 
@@ -241,7 +274,7 @@ def main():
 
             # print(f"result: {result}")
             history.append(types.Content(role='model', parts=[types.Part(function_response=types.FunctionResponse(name=function_call.name, response=result))]))
-            print(history)
+            #print(history)
         else:
             model_text_response = response.candidates[0].content.parts[0].text
             print(model_text_response)
