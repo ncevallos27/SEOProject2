@@ -11,46 +11,116 @@ from google import genai
 from google.genai import types
 
 SQLPATH = "sqlite:///events.db"
-SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-def schedule_meeting(attendees: list, date: str, time: str, topic: str):
-    """
-    Schedules a meeting with specified attendees at a given time and date.
 
-    Parameters:
-        --attendees: List of people attending the meeting.
-        --date: Date of the meeting (e.g., '2024-07-29)
-        --time: Time of the meeting (e.g., '15:00')
-        --topic: The subject or topic of the meeting.
-    """
+def insert_calendar_event(event_data, creds, calendar_id="primary"):
+    """Inserts a user provided event into their calendar."""
 
-    return f"Scheduled meeting for {attendees} at {date} {time} to discuss {topic}"
+    try:
+        service = build("calendar", "v3", credentials=creds)
 
-schedule_meeting_function = {
-    "name": "schedule_meeting",
-    "description": "Schedules a meeting with specified attendees at a given time and date.",
+        event = (
+            service.events().insert(calendarId=calendar_id, body=event_data).execute()
+        )
+        print(f'Event created: {event.get("htmlLink")}')
+
+    except HttpError as error:
+        print(f"An error occurred: {error}")
+
+
+insert_calendar_event_function = {
+    "name": "insert_calendar_event",
+    "description": "Inserts a user provided event into their calendar",
     "parameters": {
         "type": "object",
         "properties": {
-            "attendees": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "List of people attending the meeting.",
+            "event_data": {
+                "type": "object",
+                "properties": {
+                    "summary": {"type": "string", "description": "Summary of event."},
+                    "location": {"type": "string", "description": "Location of event."},
+                    "description": {
+                        "type": "string",
+                        "description": "Descriptive summary of the event and its purpose.",
+                    },
+                    "start": {
+                        "type": "object",
+                        "properties": {
+                            "dateTime": {
+                                "type": "string",
+                                "description": "Date of the event in YYYY-MM-DDTHH:MM:SS-OFFSET format",
+                            },
+                            "timeZone": {
+                                "type": "string",
+                                "description": "Timezone of the event.",
+                            },
+                        },
+                        "required": ["dateTime", "timeZone"],
+                    },
+                    "end": {
+                        "type": "object",
+                        "properties": {
+                            "dateTime": {
+                                "type": "string",
+                                "description": "Date of the event in YYYY-MM-DDTHH:MM:SS-OFFSET format",
+                            },
+                            "timeZone": {
+                                "type": "string",
+                                "description": "Timezone of the event.",
+                            },
+                        },
+                        "required": ["dateTime", "timeZone"],
+                    },
+                    "attendees": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "description": "Email of an attendee.",
+                                },
+                            },
+                            "required": ["email"],
+                        },
+                        "description": "List of attendees for the event, each with an email property.",
+                    },
+                    "reminders": {
+                        "type": "object",
+                        "properties": {
+                            "useDefault": {
+                                "type": "boolean",
+                                "description": "Whether to use default reminders for the calendar.",
+                            },
+                            "overrides": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "method": {
+                                            "type": "string",
+                                            "description": "Method for the reminder (e.g., 'email', 'popup').",
+                                        },
+                                        "minutes": {
+                                            "type": "integer",
+                                            "description": "Number of minutes before the event to send the reminder.",
+                                        },
+                                    },
+                                    "required": ["method", "minutes"],
+                                },
+                            },
+                        },
+                    },
+                },
+                "required": ["summary", "start", "end"],
             },
-            "date": {
+            "calendar_id": {
                 "type": "string",
-                "description": "Date of the meeting (e.g., '2024-07-29')",
-            },
-            "time": {
-                "type": "string",
-                "description": "Time of the meeting (e.g., '15:00')",
-            },
-            "topic": {
-                "type": "string",
-                "description": "The subject or topic of the meeting.",
+                "description": "Identifier of the calendar. Defaults to 'primary'.",
             },
         },
-        "required": ["attendees", "date", "time", "topic"],
+        "required": ["event_data"],
     },
 }
 
@@ -59,24 +129,22 @@ def main():
     """
     TODO!: Write docstring for main()
     """
-    load_dotenv() # reads .env by default (no need for Path module)
+    load_dotenv()  # reads .env by default (no need for Path module)
     creds = None
 
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                "credentials.json", SCOPES
-            )
+            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
             creds = flow.run_local_server(port=0)
-        
+
         with open("token.json", "w") as token:
             token.write(creds.to_json())
-        
+
     try:
         service = build("calendar", "v3", credentials=creds)
 
@@ -99,36 +167,48 @@ def main():
         if not events:
             print("No upcoming events found.")
             return
-        
+
         for event in events:
             start = event["start"].get("dateTime", event["start"].get("date"))
             print(start, event["summary"])
     except HttpError as error:
         print(f"An error occurred: {error}")
-    
+
     # Config client and tools
     client = genai.Client()
-    tools = types.Tool(function_declarations=[schedule_meeting_function])
+    tools = types.Tool(function_declarations=[insert_calendar_event_function])
     config = types.GenerateContentConfig(tools=[tools])
 
-    # Send request with function declarations
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=input("Enter prompt: "),
-        config=config,
-    )
+    history = []  # convo history
 
-    # Check for function call
-    if response.candidates[0].content.parts[0].function_call:
-        function_call = response.candidates[0].content.parts[0].function_call
-        print(f"Function to call: {function_call.name}")
-        print(f"Arguments: {function_call.args}")
-        result = schedule_meeting(**function_call.args)
-        print(f"result: {result}")
-    else:
-        print("No funciton call found in the response.")
-        print(response.text)
-    
+    while True:
+        user_input = input("Enter prompt: ")
+        history.append(types.Content(role="user", parts=[types.Part(text=user_input)]))
+
+        # Send request with function declarations
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=history,
+            config=config,
+        )
+
+        # Check for function call
+        if response.candidates[0].content.parts[0].function_call:
+            function_call = response.candidates[0].content.parts[0].function_call
+            print(f"Function to call: {function_call.name}")
+            print(f"Arguments: {function_call.args}")
+            result = insert_calendar_event(**function_call.args, creds=creds)
+
+            print(f"result: {result}")
+            history.append(types.Content(role='model', parts=[types.Part(function_response=types.FunctionResponse(name=function_call.name, response=result))]))
+        else:
+            model_text_response = response.candidates[0].content.parts[0].text
+            print(model_text_response)
+            history.append(
+                types.Content(
+                    role="model", parts=[types.Part(text=model_text_response)]
+                )
+            )
 
 
 if __name__ == "__main__":
