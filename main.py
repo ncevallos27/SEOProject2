@@ -13,7 +13,6 @@ from google.genai import types
 SQLPATH = "sqlite:///events.db"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-
 def insert_calendar_event(event_data, creds, calendar_id="primary"):
     """
     Inserts a user event into the specified Google Calendar.
@@ -58,7 +57,7 @@ def list_calendar_event(creds, quantity=10):
         Prints each event's start time and summary to the console.
         Prints a message if no upcoming events are found or if an API error occurs.
     """
-
+    
     try:
         service = build("calendar", "v3", credentials=creds)
 
@@ -84,9 +83,9 @@ def list_calendar_event(creds, quantity=10):
         event_list = []
         for event in events:
             start = event["start"].get("dateTime", event["start"].get("date"))
+            end = event["end"].get("dateTime", event["end"].get("date"))
             print(start, event["summary"])
-            event_list.append({"start" : start, "summary" : event.get("summary", "no title")})
-
+            event_list.append({"start" : start, "summary" : event.get("summary", "no title"), "end":end})
         return event_list
     except HttpError as error:
         print(f"An error occurred: {error}")
@@ -234,10 +233,23 @@ def main():
     tools = types.Tool(function_declarations=[insert_calendar_event_function, list_calendar_event_function])
     config = types.GenerateContentConfig(tools=[tools])
 
-    history = []  # convo history
+    context = ""
+    for event in event_data:
+        context+=str(f"{event["start"]}->{event["end"]}:{event["summary"]}\n")
+
+    history = [
+        types.Content(
+            role="model",
+            parts=[types.Part(text=f"Here are the upcoming events on the user's calendar to take into account when creating new events and listing events:\n{context}")]
+    )]  # convo history
 
     while True:
-        user_input = input("Enter prompt: ")
+        user_input = input("Enter prompt (q to quit): ")
+
+        if user_input.lower() == 'q':
+            print("Goodbye")
+            return
+        
         history.append(types.Content(role="user", parts=[types.Part(text=user_input)]))
 
         # Send request with function declarations
@@ -271,7 +283,6 @@ def main():
                     role="model", parts=[types.Part(text=model_text_response)]
                 )
             )
-
 
 if __name__ == "__main__":
     main()
