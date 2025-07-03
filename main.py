@@ -13,7 +13,6 @@ from google.genai import types
 SQLPATH = "sqlite:///events.db"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-
 def insert_calendar_event(event_data, creds, calendar_id="primary"):
     """Inserts a user provided event into their calendar."""
 
@@ -174,7 +173,6 @@ list_calendar_event_function = {
     },  
 }
 
-
 def main():
     """
     TODO!: Write docstring for main()
@@ -252,7 +250,6 @@ def main():
                     role="model", parts=[types.Part(text=model_text_response)]
                 )
             )
-
 
 if __name__ == "__main__":
     main()
