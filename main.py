@@ -55,8 +55,9 @@ def list_calendar_event(creds, quantity=10):
         event_list = []
         for event in events:
             start = event["start"].get("dateTime", event["start"].get("date"))
+            end = event["end"].get("dateTime", event["end"].get("date"))
             print(start, event["summary"])
-            event_list.append({"start" : start, "summary" : event.get("summary", "no title")})
+            event_list.append({"start" : start, "summary" : event.get("summary", "no title"), "end":end})
 
         return event_list
     except HttpError as error:
@@ -201,10 +202,23 @@ def main():
     tools = types.Tool(function_declarations=[insert_calendar_event_function, list_calendar_event_function])
     config = types.GenerateContentConfig(tools=[tools])
 
-    history = []  # convo history
+    context = ""
+    for event in event_data:
+        context+=str(f"{event["start"]}->{event["end"]}:{event["summary"]}\n")
+
+    history = [
+        types.Content(
+            role="model",
+            parts=[types.Part(text=f"Here are the upcoming events on the user's calendar:\n{context}")]
+    )]  # convo history
 
     while True:
-        user_input = input("Enter prompt: ")
+        user_input = input("Enter prompt (q to quit): ")
+
+        if user_input.lower() == 'q':
+            print("Goodbye")
+            return
+        
         history.append(types.Content(role="user", parts=[types.Part(text=user_input)]))
 
         # Send request with function declarations
