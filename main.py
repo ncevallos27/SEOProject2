@@ -29,6 +29,36 @@ def insert_calendar_event(event_data, creds, calendar_id="primary"):
         print(f"An error occurred: {error}")
 
 
+def list_calendar_event(creds, quantity=10):
+    try:
+        service = build("calendar", "v3", credentials=creds)
+
+        # Calling the Calendar API
+        now = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        print(f"Getting the upcoming {quantity} event(s)")
+        events_result = (
+            service.events()
+            .list(
+                calendarId="primary",
+                timeMin=now,
+                maxResults=15,
+                singleEvents=True,
+                orderBy="startTime",
+            )
+            .execute()
+        )
+        events = events_result.get("items", [])
+
+        if not events:
+            print("No upcoming events found.")
+
+        for event in events:
+            start = event["start"].get("dateTime", event["start"].get("date"))
+            print(start, event["summary"])
+    except HttpError as error:
+        print(f"An error occurred: {error}")
+
+
 insert_calendar_event_function = {
     "name": "insert_calendar_event",
     "description": "Inserts a user provided event into their calendar",
@@ -124,6 +154,21 @@ insert_calendar_event_function = {
     },
 }
 
+list_calendar_event_function = {
+    "name": "list_calendar_event",
+    "description": "Lists the events on the calendar and displays them to the user",
+    "parameters": {
+        "type": "object",
+        "properties" : {
+            "quantity" : {
+            'type' : 'integer',
+            'description' : "number of events to list. Defaults to '10'."
+            },
+        },
+        "required" : ["quantity"],
+    },  
+}
+
 
 def main():
     """
@@ -145,37 +190,11 @@ def main():
         with open("token.json", "w") as token:
             token.write(creds.to_json())
 
-    try:
-        service = build("calendar", "v3", credentials=creds)
-
-        # Calling the Calendar API
-        now = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
-        print("Getting the upcoming 15 events")
-        events_result = (
-            service.events()
-            .list(
-                calendarId="primary",
-                timeMin=now,
-                maxResults=15,
-                singleEvents=True,
-                orderBy="startTime",
-            )
-            .execute()
-        )
-        events = events_result.get("items", [])
-
-        if not events:
-            print("No upcoming events found.")
-
-        for event in events:
-            start = event["start"].get("dateTime", event["start"].get("date"))
-            print(start, event["summary"])
-    except HttpError as error:
-        print(f"An error occurred: {error}")
+    list_calendar_event(creds=creds, quantity=10)
 
     # Config client and tools
-    client = genai.Client(api_key=os.getenv("GENAI_KEY"))
-    tools = types.Tool(function_declarations=[insert_calendar_event_function])
+    client = genai.Client()
+    tools = types.Tool(function_declarations=[insert_calendar_event_function, list_calendar_event_function])
     config = types.GenerateContentConfig(tools=[tools])
 
     history = []  # convo history
@@ -194,12 +213,19 @@ def main():
         # Check for function call
         if response.candidates[0].content.parts[0].function_call:
             function_call = response.candidates[0].content.parts[0].function_call
-            print(f"Function to call: {function_call.name}")
-            print(f"Arguments: {function_call.args}")
-            result = insert_calendar_event(**function_call.args, creds=creds)
+            print(f"Calling {function_call.name}()")
+            # print(f"Arguments: {function_call.args}")
+            match function_call.name:
+                case 'list_calendar_event':
+                    result = list_calendar_event(**function_call.args, creds=creds)
+                    continue
+                case 'insert_calendar_event':
+                    result = insert_calendar_event(**function_call.args, creds=creds)
+                    continue
 
-            print(f"result: {result}")
+            # print(f"result: {result}")
             history.append(types.Content(role='model', parts=[types.Part(function_response=types.FunctionResponse(name=function_call.name, response=result))]))
+            print(history)
         else:
             model_text_response = response.candidates[0].content.parts[0].text
             print(model_text_response)
