@@ -8,7 +8,7 @@ class Agent():
         self.cal = gCal
 
     def getAnswer(self, prompt, redoFlag=False):
-        return self.gen.getResponse(prompt, context="").text
+        return self.gen.getResponse(prompt, context="")
     
     def createEvent(self, start, end, name, description):
         newEvent = {

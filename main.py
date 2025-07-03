@@ -166,7 +166,6 @@ def main():
 
         if not events:
             print("No upcoming events found.")
-            return
 
         for event in events:
             start = event["start"].get("dateTime", event["start"].get("date"))
@@ -175,7 +174,7 @@ def main():
         print(f"An error occurred: {error}")
 
     # Config client and tools
-    client = genai.Client()
+    client = genai.Client(api_key=os.getenv("GENAI_KEY"))
     tools = types.Tool(function_declarations=[insert_calendar_event_function])
     config = types.GenerateContentConfig(tools=[tools])
 
